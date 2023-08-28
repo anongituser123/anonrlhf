@@ -4,18 +4,18 @@ import sys
 from datasets import load_dataset
 from ppo_hh import create_reward_fn
 
-import trlx
-from trlx.data.default_configs import (
+import autorlhf
+from autorlhf.data.default_configs import (
     ModelConfig,
     OptimizerConfig,
     SchedulerConfig,
     SFTConfig,
     TokenizerConfig,
     TrainConfig,
-    TRLConfig,
+    AutoRLHFConfig,
 )
 
-default_config = TRLConfig(
+default_config = AutoRLHFConfig(
     train=TrainConfig(
         seq_length=1024,
         epochs=100,
@@ -44,12 +44,12 @@ def preprocess(sample):
 
 
 def main(hparams={}):
-    config = TRLConfig.update(default_config, hparams)
+    config = AutoRLHFConfig.update(default_config, hparams)
 
-    dataset = load_dataset("Dahoas/full-hh-rlhf").map(preprocess)
+    dataset = load_dataset("full-hh-rlhf").map(preprocess)
     reward_fn = create_reward_fn()
 
-    trlx.train(
+    autorlhf.train(
         config=config,
         samples=dataset["train"]["chosen_sample"],
         eval_prompts=dataset["test"]["prompt"][:280],

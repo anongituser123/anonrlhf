@@ -13,18 +13,18 @@ from torch import nn
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from tritonclient.utils import np_to_triton_dtype
 
-import trlx
-from trlx.data.default_configs import (
+import autorlhf
+from autorlhf.data.default_configs import (
     ModelConfig,
     OptimizerConfig,
     PPOConfig,
     SchedulerConfig,
     TokenizerConfig,
     TrainConfig,
-    TRLConfig,
+    AutoRLHFConfig,
 )
 
-default_config = TRLConfig(
+default_config = AutoRLHFConfig(
     train=TrainConfig(
         seq_length=1024,
         epochs=10000,
@@ -72,7 +72,7 @@ if config_name == "125M":
     default_config.train.batch_size = 32
     default_config.train.total_steps = 1500
     default_config.train.checkpoint_dir = "checkpoints/ppo_hh_125M"
-    default_config.model.model_path = "Dahoas/pythia-125M-static-sft"
+    default_config.model.model_path = "/pythia-125M-static-sft"
     default_config.tokenizer.tokenizer_path = "EleutherAI/gpt-neox-20b"
     default_config.method.num_rollouts = 128
 elif config_name == "1B":
@@ -81,7 +81,7 @@ elif config_name == "1B":
     default_config.optimizer.kwargs["lr"] = 6e-6
     default_config.scheduler.kwargs["eta_min"] = 6e-6
     default_config.train.checkpoint_dir = "checkpoints/ppo_hh_1B"
-    default_config.model.model_path = "Dahoas/pythia-1B-static-sft"
+    default_config.model.model_path = "/pythia-1B-static-sft"
     default_config.tokenizer.tokenizer_path = "EleutherAI/gpt-neox-20b"
     default_config.method.chunk_size = 16
 elif config_name == "6B":
@@ -89,7 +89,7 @@ elif config_name == "6B":
     default_config.train.seq_length = 512
     default_config.train.total_steps = 6000
     default_config.train.checkpoint_dir = "checkpoints/ppo_hh_6B"
-    default_config.model.model_path = "Dahoas/pythia-6B-static-sft"
+    default_config.model.model_path = "/pythia-6B-static-sft"
     default_config.tokenizer.tokenizer_path = "EleutherAI/gpt-neox-20b"
     default_config.method.chunk_size = 16
 elif config_name == "20B":
@@ -156,7 +156,7 @@ def create_reward_fn():  # noqa:  C901
                 return returns
 
         reward_model = RewardModel("EleutherAI/gpt-j-6B", reward_tokenizer.eos_token_id)
-        directory = snapshot_download("Dahoas/gptj-rm-static", revision="676bfd4d")
+        directory = snapshot_download("/gptj-rm-static", revision="676bfd4d")
         for fpath in os.listdir(directory):
             if fpath.endswith(".pt") or fpath.endswith(".bin"):
                 checkpoint = os.path.join(directory, fpath)
@@ -206,14 +206,14 @@ def create_reward_fn():  # noqa:  C901
 
 
 def main(hparams={}):
-    config = TRLConfig.update(default_config, hparams)
+    config = AutoRLHFConfig.update(default_config, hparams)
 
-    dataset = load_dataset("Dahoas/rm-static")
+    dataset = load_dataset("/rm-static")
     prompts = [{"prompt": x["prompt"], "original_output": x["chosen"]} for x in dataset["train"]]
     eval_prompts = [{"prompt": x["prompt"], "original_output": x["chosen"]} for x in islice(dataset["test"], 280)]
     reward_fn = create_reward_fn()
 
-    trlx.train(
+    autorlhf.train(
         prompts=prompts,
         eval_prompts=eval_prompts,
         reward_fn=reward_fn,

@@ -6,18 +6,18 @@ from itertools import islice
 from datasets import load_dataset
 from ppo_hh import create_reward_fn
 
-import trlx
-from trlx.data.default_configs import (
+import autorlhf
+from autorlhf.data.default_configs import (
     ILQLConfig,
     ModelConfig,
     OptimizerConfig,
     SchedulerConfig,
     TokenizerConfig,
     TrainConfig,
-    TRLConfig,
+    AutoRLHFConfig,
 )
 
-default_config = TRLConfig(
+default_config = AutoRLHFConfig(
     train=TrainConfig(
         seq_length=1024,
         batch_size=4,
@@ -81,16 +81,16 @@ def preprocess(sample):
 
 
 def main(hparams={}):
-    config = TRLConfig.update(default_config, hparams)
+    config = AutoRLHFConfig.update(default_config, hparams)
 
-    dataset = load_dataset("Dahoas/full-hh-rlhf").map(preprocess)
+    dataset = load_dataset("/full-hh-rlhf").map(preprocess)
     prompts_outputs = sum(dataset["train"]["prompt_output"], [])
 
     rewards = sum(dataset["train"]["reward"], [])
     eval_prompts = [{"prompt": x["prompt"], "original_output": x["chosen"]} for x in islice(dataset["test"], 280)]
     reward_fn = create_reward_fn()
 
-    trlx.train(
+    autorlhf.train(
         samples=prompts_outputs,
         rewards=rewards,
         config=config,

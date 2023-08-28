@@ -28,7 +28,7 @@ exp_manager:
   create_tensorboard_logger: False
   create_wandb_logger: False
   wandb_logger_kwargs:
-    project: trlxnemo
+    project: autorlhfnemo
     name: megatron_gpt_2b_ppo_sentiments
   resume_if_exists: False
   resume_ignore_no_checkpoint: True
